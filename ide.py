@@ -20,7 +20,6 @@ class Application(tkinter.Tk):
         self.geometry('800x700')
         self.minsize(800,700)
         self.title('PROGRAMMER\'S IDE [Untitled File]')
-
         #todo menu collection
         file_menu = tkinter.Menu(self,tearoff=False,bg='gray',activebackground='gray')
         file_menu.add_command(label='new', command=lambda:file.newFile(self,text))
@@ -38,6 +37,8 @@ class Application(tkinter.Tk):
         main_menu.add_cascade(label='file',menu=file_menu)
         main_menu.add_cascade(label='edit',menu=edit_menu)
         main_menu.add_cascade(label='style',menu=style_menu)
+        main_menu.add_cascade(label='time')
+        self.updateTime(main_menu)
         # todo text area and scrollbar
         main_frame=tkinter.Frame(self)
         scroll = tkinter.Scrollbar(main_frame)
@@ -83,6 +84,11 @@ class Application(tkinter.Tk):
         else:
             self.attributes('-fullscreen', False)
         Application.COUNT += 1
+    def updateTime(self,main_menu):
+        main_menu.entryconfigure(4,label=time.strftime("              %I:%M:%S"))
+        main_menu.update_idletasks()
+        self.after(1000,lambda:self.updateTime(main_menu))
+
     class File:
         """all file operational funcionality function"""
         def newFile(self,ref,text):
@@ -231,3 +237,4 @@ class Application(tkinter.Tk):
 
 if __name__ == '__main__':
     Application()
+
