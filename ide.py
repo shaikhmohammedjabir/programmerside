@@ -39,12 +39,14 @@ class Application(tkinter.Tk):
         main_menu.add_cascade(label='edit',menu=edit_menu)
         main_menu.add_cascade(label='style',menu=style_menu)
         # todo text area and scrollbar
-        scroll = tkinter.Scrollbar(self)
+        main_frame=tkinter.Frame(self)
+        scroll = tkinter.Scrollbar(main_frame)
         scroll.pack(side=tkinter.RIGHT, fill=tkinter.Y)
-        text = tkinter.Text(self,selectbackground='green',selectforeground='white',yscrollcommand=scroll.set)
+        text = tkinter.Text(main_frame,selectbackground='green',selectforeground='white',yscrollcommand=scroll.set)
         text.pack(expand=True, fill=tkinter.BOTH)
         text.focus_set()
         scroll.config(command=text.yview)
+        main_frame.pack(expand=True, fill=tkinter.BOTH)
         #todo widget for interpreter
         frame=tkinter.Frame(self)
         frame.pack(fill=tkinter.X)
@@ -181,27 +183,28 @@ class Application(tkinter.Tk):
                 Application.FILE
             except AttributeError:
                 tkinter.messagebox.showinfo("can't find","file not opened or save")
-            if sys.platform.lower()=='linux':
-                if Application.FILE.endswith('.py'):
-                    Application.INTERPRETER = '/usr/bin/python3'
-                elif Application.FILE.endswith('.sh'):
-                    Application.INTERPRETER = '/usr/bin/sh'
-                elif Application.FILE.endswith('.c'):
-                    Application.INTERPRETER = '/usr/bin/gcc'
-                elif Application.FILE.endswith('.cpp'):
-                    Application.INTERPRETER = '/usr/bin/g++'
-            elif sys.platform.lower().startswith('win'):
-                Application.INTERPRETER=r'C:\Users\{}\AppData\Local\Programs\Python\Python38\python'.format(getpass.getuser())
             else:
-                Application.INTERPRETER=tkinter.filedialog.askopenfilename()
+                if sys.platform.lower()=='linux':
+                    if Application.FILE.endswith('.py'):
+                        Application.INTERPRETER = '/usr/bin/python3'
+                    elif Application.FILE.endswith('.sh'):
+                        Application.INTERPRETER = '/usr/bin/sh'
+                    elif Application.FILE.endswith('.c'):
+                        Application.INTERPRETER = '/usr/bin/gcc'
+                    elif Application.FILE.endswith('.cpp'):
+                        Application.INTERPRETER = '/usr/bin/g++'
+                elif sys.platform.lower().startswith('win'):
+                    Application.INTERPRETER=r'C:\Users\{}\AppData\Local\Programs\Python\Python38\python'.format(getpass.getuser())
+                else:
+                    Application.INTERPRETER=tkinter.filedialog.askopenfilename()
 
-            if Application.INTERPRETER:
-                execute['state']=tkinter.NORMAL
-                try:
-                    interpreter['text']=os.path.basename(Application.INTERPRETER)
-                except TypeError:
-                    pass
-                interpreter['fg']='green'
+                if Application.INTERPRETER:
+                    execute['state']=tkinter.NORMAL
+                    try:
+                        interpreter['text']=os.path.basename(Application.INTERPRETER)
+                    except TypeError:
+                        pass
+                    interpreter['fg']='green'
         def validate(self,event,argument_label):
             if len(event.widget.get())>0:
                 argument_label['fg']='green'
