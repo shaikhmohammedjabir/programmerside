@@ -3,6 +3,7 @@ import tkinter.filedialog
 import tkinter.messagebox
 import tkinter.font
 import tkinter.colorchooser
+import tempfile
 import subprocess
 import getpass
 import os,sys
@@ -33,11 +34,15 @@ class Application(tkinter.Tk):
         edit_menu.add_command(label='paste',command=lambda:text.event_generate('<<Paste>>'))
         style_menu=tkinter.Menu(self,tearoff=False,bg='gray',activebackground='gray')
         style_menu.add_command(label='font',command=lambda :style.style(text))
+        output_menu=tkinter.Menu(self,tearoff=False,bg='gray',activebackground='gray')
+        output_menu.add_command(label='terminal',command=lambda:compiler.output('terminal',execute))
+        output_menu.add_command(label='text',command=lambda :compiler.output('text',execute))
         main_menu=tkinter.Menu(self,bg='gray',activebackground='gray')
         main_menu.add_cascade(label='file',menu=file_menu)
         main_menu.add_cascade(label='edit',menu=edit_menu)
         main_menu.add_cascade(label='style',menu=style_menu)
-        main_menu.add_cascade(label='time')
+        main_menu.add_cascade(label='output',menu=output_menu)
+        main_menu.add_cascade()
         self.updateTime(main_menu)
         # todo text area and scrollbar
         main_frame=tkinter.Frame(self)
@@ -59,23 +64,23 @@ class Application(tkinter.Tk):
         argument=tkinter.Entry(frame,highlightcolor='green',width=50)
         argument.bind('<FocusOut>',lambda event:compiler.validate(event,argument_label))
         argument.pack(side=tkinter.LEFT)
-        execute=tkinter.Button(frame,text='RUN',state=tkinter.DISABLED,relief=tkinter.SOLID)
-        execute.bind('<Button-1>',lambda x:compiler.execute(self,text,file,argument,interpreter,execute))
-        execute.bind('<space>',lambda x:compiler.execute(self,text,file,argument,interpreter,execute))
-        execute.bind('<Return>',lambda x:compiler.execute(self,text,file,argument,interpreter,execute))
-        execute.bind('<KP_Enter>',lambda x:compiler.execute(self,text,file,argument,interpreter,execute))
+        execute=tkinter.Button(frame,text='terminal',state=tkinter.DISABLED,relief=tkinter.SOLID)
+        execute.bind('<Button-1>',lambda event: compiler.execute(self,event,text,file,argument,interpreter, execute))
+        execute.bind('<space>',lambda event: compiler.execute(self,event,text,file,argument,interpreter, execute))
+        execute.bind('<Return>',lambda event: compiler.execute(self,event,text,file,argument,interpreter, execute))
+        execute.bind('<KP_Enter>',lambda event: compiler.execute(self,event,text,file,argument,interpreter, execute))
         execute.pack()
 
         #todo window configuration
         self.config(menu=main_menu)
-        self.bind('<F2>',lambda x:file.newFile(self,text))
-        self.bind('<F3>', lambda x: file.openFile(self,text))
-        self.bind('<F4>', lambda x: file.saveFile(self,text))
-        self.bind('<F5>', lambda x: file.saveAsFile(text))
-        self.bind('<F9>', lambda x: compiler.execute(self,text,file,argument, interpreter, execute))
+        self.bind('<F2>',lambda event:file.newFile(self,text))
+        self.bind('<F3>', lambda event: file.openFile(self,text))
+        self.bind('<F4>', lambda event: file.saveFile(self,text))
+        self.bind('<F5>', lambda event: file.saveAsFile(text))
+        self.bind('<F9>', lambda event: compiler.execute(self,event,text,file,argument,interpreter, execute))
         self.bind('<F11>', self.fullScreen)
-        self.bind('<F12>',lambda x:self.destroy())
-        self.bind('<Alt-f>',lambda x:style.style(text))
+        self.bind('<F12>',lambda event:self.destroy())
+        self.bind('<Alt-f>',lambda event:style.style(text))
         self.mainloop()
 
     def fullScreen(self, event):
@@ -85,7 +90,7 @@ class Application(tkinter.Tk):
             self.attributes('-fullscreen', False)
         Application.COUNT += 1
     def updateTime(self,main_menu):
-        main_menu.entryconfigure(4,label=time.strftime("              %I:%M:%S"))
+        main_menu.entryconfigure(5,label=time.strftime("      %I:%M:%S"))
         main_menu.update_idletasks()
         self.after(1000,lambda:self.updateTime(main_menu))
 
@@ -100,15 +105,16 @@ class Application(tkinter.Tk):
                 pass
         def openFile(self,ref,text):
             data=tkinter.filedialog.askopenfilename(title='open',filetypes=Application.FILE_TYPE)
-            text.delete(0.0,tkinter.END)
-            try:
-                ref.title('PROGRAMMER\'S IDE [{}]'.format(os.path.basename(data)))
-                text.insert(0.0,open(data).read())
-            except UnicodeError as ue:
-                tkinter.messagebox.showerror("file error",ue)
-            except (TypeError,FileNotFoundError):
-                pass
-            Application.FILE = data
+            if data:
+                text.delete(0.0,tkinter.END)
+                try:
+                    ref.title('PROGRAMMER\'S IDE [{}]'.format(os.path.basename(data)))
+                    text.insert(0.0,open(data).read())
+                except UnicodeError as ue:
+                    tkinter.messagebox.showerror("file error",ue)
+                except (TypeError,FileNotFoundError):
+                    pass
+                Application.FILE = data
         def saveFile(self,ref,text):
             try:
                 open(os.path.basename(Application.FILE),'w').write(text.get(0.0,tkinter.END))
@@ -192,7 +198,7 @@ class Application(tkinter.Tk):
             else:
                 if sys.platform.lower()=='linux':
                     if Application.FILE.endswith('.py'):
-                        Application.INTERPRETER = '/usr/bin/python3'
+                        Application.INTERPRETER = sys._base_executable
                     elif Application.FILE.endswith('.sh'):
                         Application.INTERPRETER = '/usr/bin/sh'
                     elif Application.FILE.endswith('.c'):
@@ -214,26 +220,38 @@ class Application(tkinter.Tk):
         def validate(self,event,argument_label):
             if len(event.widget.get())>0:
                 argument_label['fg']='green'
-        def execute(self,ref,text,file,argument,interpreter,execute):
+        def execute(self,ref,event,text,file,argument,interpreter,execute):
             file.saveFile(ref, text)
             self.selectInterpreter(interpreter,execute)
-            try:
-                #execution phase
-                result=subprocess.Popen("{} '{}' {}".format(Application.INTERPRETER,Application.FILE,argument.get()),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
-                out='execution result'.center(62, '*') + '\n' + str(result.stdout.read(), encoding='utf-8',errors='strict')
-                err=str(result.stderr.read(), encoding='utf-8', errors='strict')
-                if err:
-                    result=out+'\n\n' + "ERROR OUTPUT".center(62,'*') + '\n' + err + ''.center(62,'*')
+
+            if event.widget['text']=='terminal':
+                if sys.platform.lower() == 'linux':
+                    os.chdir(Application.FILE.replace(os.path.basename(Application.FILE),''))
+                    os.system("gnome-terminal -e 'bash -c \"{} {} {}; exec bash\"'".format(Application.INTERPRETER,os.path.basename(Application.FILE),argument.get()))
                 else:
-                    result=out
-                #output graphic area
-                top_level = tkinter.Toplevel(ref)
-                top_text = tkinter.Text(top_level)
-                top_text.insert(0.0,result)
-                top_text.pack(fill=tkinter.BOTH, expand=True)
-                top_level.bind('<Escape>',lambda x:top_level.destroy())
-            except AttributeError:
-                tkinter.messagebox.showinfo("can't find", "file not opened or save")
+                    sys.stderr.write("terminal not connected")
+
+            elif event.widget['text']=='text':
+                try:
+                    #execution phase
+                    result=subprocess.Popen("{} '{}' {}".format(Application.INTERPRETER,Application.FILE,argument.get()),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
+                    out='execution result'.center(62, '*') + '\n' + str(result.stdout.read(), encoding='utf-8',errors='strict')
+                    err=str(result.stderr.read(), encoding='utf-8', errors='strict')
+                    if err:
+                        result=out+'\n\n' + "ERROR OUTPUT".center(62,'*') + '\n' + err + ''.center(62,'*')
+                    else:
+                        result=out
+                    #output graphic area
+                    top_level = tkinter.Toplevel(ref)
+                    top_text = tkinter.Text(top_level)
+                    top_text.insert(0.0,result)
+                    top_text.pack(fill=tkinter.BOTH, expand=True)
+                    top_level.bind('<Escape>',lambda x:top_level.destroy())
+                except AttributeError:
+                    tkinter.messagebox.showinfo("can't find", "file not opened or save")
+        def output(self,output_type,execute_button):
+            execute_button['text']=output_type
+
 
 if __name__ == '__main__':
     Application()
