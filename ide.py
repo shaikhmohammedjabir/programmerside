@@ -70,14 +70,13 @@ class Application(tkinter.Tk):
         execute.bind('<Return>',lambda event: compiler.execute(self,event,text,file,argument,interpreter, execute))
         execute.bind('<KP_Enter>',lambda event: compiler.execute(self,event,text,file,argument,interpreter, execute))
         execute.pack()
-
         #todo window configuration
         self.config(menu=main_menu)
         self.bind('<F2>',lambda event:file.newFile(self,text))
         self.bind('<F3>', lambda event: file.openFile(self,text))
         self.bind('<F4>', lambda event: file.saveFile(self,text))
         self.bind('<F5>', lambda event: file.saveAsFile(text))
-        self.bind('<F9>', lambda event: compiler.execute(self,event,text,file,argument,interpreter, execute))
+        self.bind('<F8>', lambda event:execute.focus_set)
         self.bind('<F11>', self.fullScreen)
         self.bind('<F12>',lambda event:self.destroy())
         self.bind('<Alt-f>',lambda event:style.style(text))
