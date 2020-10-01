@@ -3,7 +3,6 @@ import tkinter.filedialog
 import tkinter.messagebox
 import tkinter.font
 import tkinter.colorchooser
-import tempfile
 import subprocess
 import getpass
 import os,sys
@@ -21,6 +20,9 @@ class Application(tkinter.Tk):
         self.geometry('800x700')
         self.minsize(800,700)
         self.title('PROGRAMMER\'S IDE [Untitled File]')
+        icon=tkinter.PhotoImage(file='style/icon.png')
+        self.iconphoto(True,icon)
+
         #todo menu collection
         file_menu = tkinter.Menu(self,tearoff=False,bg='gray',activebackground='gray')
         file_menu.add_command(label='new', command=lambda:file.newFile(self,text))
